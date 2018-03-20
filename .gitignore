@@ -99,3 +99,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Temporary files of pycharm
+.idea
+
+# Temporary files of vscode
+.vscode

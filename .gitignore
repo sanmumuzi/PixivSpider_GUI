@@ -105,3 +105,21 @@ ENV/
 
 # Temporary files of vscode
 .vscode
+
+# cookies file
+.cookies
+cookies/
+
+# database file
+.db
+db/
+
+# picture directory
+.artist_work
+
+# info_floder
+.info_floder
+info_floder/
+
+# PyUIC
+*.ui

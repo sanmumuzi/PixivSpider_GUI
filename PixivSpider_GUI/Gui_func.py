@@ -11,8 +11,7 @@ picture_dir = os.path.abspath(os.curdir)
 picture_list = [x for x in os.listdir(picture_dir) if x.endswith(('png', 'jpg'))]
 print(picture_list)
 
-account = '332627946@qq.com'
-password = '13752016524'
+
 
 
 def select_one_picture(picture_dir, picture_file=None):

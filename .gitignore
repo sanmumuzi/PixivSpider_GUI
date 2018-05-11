@@ -109,10 +109,12 @@ ENV/
 # cookies file
 .cookies
 cookies/
+cookies
 
 # database file
 .db
 db/
+*.sqlite3
 
 # picture directory
 .artist_work

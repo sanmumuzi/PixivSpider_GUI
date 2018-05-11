@@ -12,8 +12,6 @@ picture_list = [x for x in os.listdir(picture_dir) if x.endswith(('png', 'jpg'))
 print(picture_list)
 
 
-
-
 def select_one_picture(picture_dir, picture_file=None):
     if picture_file is not None:
         return os.path.join(picture_dir, picture_file)
@@ -114,19 +112,25 @@ def main_logic(qt_picture_list, qt_painter_list, qt_line, qt_widget, qt_table_pi
     except IndexError as e:
         print(e)
         print('正则匹配失败，本地没有这张图片...')
-        picture_id = id.split('_')[0]
-        picture_base_info, resp_text, picture_base_info_sign = download_specific_picture(picture_id=picture_id)
-        file_type = picture_base_info[4]  # get file type.
-        painter_id = operate_picture_base_info(picture_base_info, resp_text, picture_base_info_sign)
-        # insert picture base info to database.
-        print('获取到的painter_id:', painter_id)
-        operate_picture_info(picture_id=picture_id, resp_text=resp_text)
-        # insert picture info to database.
-        operate_painter_info(painter_id=painter_id, qt_painter_list=qt_painter_list)
-        # insert painter info to database.
+        try:
+            picture_id = int(id.split('_')[0])
+        except ValueError as e:
+            print(e)
+            print('GGGGGGGGGGGGGGGGGGGGGG')
+            return
+        else:
+            picture_base_info, resp_text, picture_base_info_sign = download_specific_picture(picture_id=picture_id)
+            file_type = picture_base_info[4]  # get file type.
+            painter_id = operate_picture_base_info(picture_base_info, resp_text, picture_base_info_sign)
+            # insert picture base info to database.
+            print('获取到的painter_id:', painter_id)
+            operate_picture_info(picture_id=picture_id, resp_text=resp_text)
+            # insert picture info to database.
+            operate_painter_info(painter_id=painter_id, qt_painter_list=qt_painter_list)
+            # insert painter info to database.
 
-        item = QtWidgets.QListWidgetItem(str(id) + '.' + file_type)
-        qt_picture_list.addItem(item)
+            item = QtWidgets.QListWidgetItem(str(id) + '.' + file_type)
+            qt_picture_list.addItem(item)
     else:
         print('本地有这张图片，直接跳转...')
     # item.setSelected(True)

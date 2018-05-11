@@ -228,4 +228,3 @@ class Ui_MainWindow(object):
         self.label_tag.setText(_translate("MainWindow", "标签"))
         self.menuGG.setTitle(_translate("MainWindow", "GG"))
         self.actionfuck.setText(_translate("MainWindow", "fuck"))
-

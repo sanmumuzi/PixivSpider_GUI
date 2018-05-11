@@ -1,8 +1,6 @@
 import sqlite3
 from functools import wraps
-
-# from PixivSpider.setting import db_path
-db_path = '_pixiv.db'
+from setting import db_path
 
 __all__ = ['create_db_and_table', 'insert_picture_base_info_from_download', 'insert_picture_info_from_PixivPictureInfo',
            'insert_painter_base_info_from_picture_detail_page', 'search_picture_base_info', 'search_picture_info',
@@ -10,20 +8,31 @@ __all__ = ['create_db_and_table', 'insert_picture_base_info_from_download', 'ins
            'update_picture_base_info', 'search_all_painter', 'check_specific_painter']
 
 create_table_tuple = (
+    # 用户数据表
+    'CREATE TABLE PS_USER (ID INT PRIMARY KEY NOT NULL)',
+    # 用户书签关联表
+    'CREATE TABLE USER_BOOKMARK_RELATION (USER_ID INT NOT NULL, PICTURE_ID INT NOT NULL, '
+    'COMMENT TEXT)',
+    # 书签的标签表
+    'CREATE TABLE BOOKMARK_TAG (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT NOT NULL UNIQUE)',
+    # 书签的关联表
+    'CREATE TABLE BOOKMARK_TAG_RELATION (TAG_ID INT NOT NULL, USER_ID INT NOT NULL, PICTURE_ID INT NOT NULL)',
+    # 书签数表
+    'CREATE TABLE BOOKMARK_COUNT (ID INT PRIMARY KEY NOT NULL, COUNT INT)',
     # 图片基本信息数据表
-    'CREATE TABLE PICTURE (ID INT PRIMARY KEY NOT NULL, PID INT , DATE TEXT NOT NULL, TYPE TEXT NOT NULL , P INT)',
+    'CREATE TABLE PICTURE (ID INT PRIMARY KEY NOT NULL, P INT, DATE TEXT NOT NULL, TYPE TEXT NOT NULL)',
     # 画师基本信息数据表
-    'CREATE TABLE PAINTER (ID INT PRIMARY KEY NOT NULL, Nickname TEXT, Website TEXT, "Self introduction" TEXT)',
+    'CREATE TABLE USER (ID INT PRIMARY KEY NOT NULL, Nickname TEXT, Website TEXT, "Self introduction" TEXT)',
     # 画师标签表
-    'CREATE TABLE "PAINTER_TAG" (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT NOT NULL UNIQUE)',
+    'CREATE TABLE "USER_TAG" (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT NOT NULL UNIQUE)',
     # 图片标签表
     'CREATE TABLE "PICTURE_TAG" (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT NOT NULL UNIQUE)',
     # 画师标签关联表
-    'CREATE TABLE PAINTER_TAG_RELATION (PAINTER_ID INT NOT NULL, TAG_ID INT NOT NULL)',
+    'CREATE TABLE USER_TAG_RELATION (USER_ID INT NOT NULL, TAG_ID INT NOT NULL)',
     # 图片标签关联表
     'CREATE TABLE PICTURE_TAG_RELATION (PICTURE_ID INT NOT NULL, TAG_ID INT NOT NULL)',
     # 画师联系方式表
-    'CREATE TABLE CONTACTS ( PAINTER_ID INT PRIMARY KEY NOT NULL, Twitter TEXT, Instagram TEXT, Tumblr TEXT, '
+    'CREATE TABLE CONTACTS (USER_ID INT PRIMARY KEY NOT NULL, Twitter TEXT, Instagram TEXT, Tumblr TEXT, '
     'Facebook TEXT, Skype TEXT, "Windows Live" TEXT, "Google Talk" TEXT, "Yahoo! Messenger" TEXT, Circlems TEXT)',
     # 画师英文个人信息表
     'CREATE TABLE EN_PERSONAL_INFO (ID INT PRIMARY KEY NOT NULL, Gender TEXT, Location TEXT, '
@@ -60,7 +69,7 @@ def create_db_and_table(cursor, connect):  # try的重复代码太多了...
     for table in create_table_tuple:
         try:
             cursor.execute(table)
-        except sqlite3.Error:
+        except sqlite3.OperationalError:
             print('Error: create table: {}.'.format(table.split(' (')[0]))
             raise
     try:

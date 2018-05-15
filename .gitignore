@@ -125,3 +125,7 @@ info_floder/
 
 # PyUIC
 *.ui
+
+# PixivSpider
+.info_folder
+info_folder/

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
+{% block body %}
+<form class="form-horizontal" role="form" action="{{ url_for('auth.register') }}" method="post">
+   <div class="form-group">
+      <label for="pixiv_account" class="col-sm-1 control-label">Account</label>
+      <div class="col-sm-3">
+         <input type="text" class="form-control" id="pixiv_account" name="pixiv_account"
+            placeholder="Please enter your pixiv account">
+      </div>
+   </div>
+   <div class="form-group">
+      <label for="pixiv_password" class="col-sm-1 control-label">Password</label>
+      <div class="col-sm-3">
+         <input type="password" class="form-control" id="pixiv_password" name="pixiv_password"
+            placeholder="Please enter your pixiv password">
+      </div>
+   </div>
+   <div class="form-group">
+      <div class="col-sm-offset-1 col-sm-3">
+         <button type="submit" class="btn btn-default">Register</button>
+      </div>
+   </div>
+</form>
+{% endblock %}

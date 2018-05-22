@@ -1,10 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    <img src="data:image/{{ illust_type }};base64,{{ illust_stream }}" />
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}PixivSpider{% endblock %}
+
+{% block body %}
+<img src="data:image/{{ illust_type }};base64,{{ illust_stream }}" class="img-responsive img-rounded center-block" />
+    <div>
+        {% if illust_base_info_dict is not none %}
+        <table class="table table-bordered" style="width: 100%;">
+            <thead>
+            <tr>
+                <th>Illust id</th>
+                <th>P</th>
+                <th>Date</th>
+                <th>File type</th>
+                <th>User id</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td id="illust_id">{{ illust_base_info_dict['id'] }}</td>
+                <td id="illust_p">{{ illust_base_info_dict['p'] }}</td>
+                <td id="illust_date">{{ illust_base_info_dict['date'] }}</td>
+                <td id="illust_file_type">{{ illust_base_info_dict['type'] }}</td>
+                <td id="illust_user_id">{{ illust_base_info_dict['user_id'] }}</td>
+            </tr>
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+{% endblock %}

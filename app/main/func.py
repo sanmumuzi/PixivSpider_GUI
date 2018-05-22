@@ -4,7 +4,7 @@ from pprint import pprint
 
 
 illust_info_restr = re.compile(r'(\d+)_p(\d+)\.([A-Za-z]+)')
-dirname_list = ['D:\\picture', 'D:\\Entertainment']
+dirname_list = ['D:\\picture', 'D:\\Entertainment', 'D:\gitcode\PixivSpider_GUI\info_folder']
 
 
 def get_dirname_list(dirname_list):

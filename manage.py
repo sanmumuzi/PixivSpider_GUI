@@ -21,6 +21,7 @@ def create_app():
         db = sqlite3.connect(app.config['DATABASE'])
         with open('app/db/schema.sql', 'rb') as f:
             db.executescript(f.read().decode('utf-8'))
+        db.close()
 
     from app import db
     db.init_app(app)
@@ -28,9 +29,14 @@ def create_app():
     from app import main
     app.register_blueprint(main.main)
 
+    from app import auth
+    app.register_blueprint(auth.auth)
+
+    from app import api_v1_0
+    app.register_blueprint(api_v1_0.api)  # 暂时不用，我讨厌JS
     return app
 
 
 if __name__ == '__main__':
-    webbrowser.open('http://localhost:5000')  # 这个地方很容易出bug
-    create_app().run()
+    webbrowser.open('http://localhost:4399')  # 这个地方很容易出bug
+    create_app().run(port=4399)

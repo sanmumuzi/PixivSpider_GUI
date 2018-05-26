@@ -27,7 +27,7 @@ def get_my_bookmark(user_id=1):
         'SELECT bookmark_tag.name, illust_info.id, illust_info.title, bookmark_count.count FROM '
         '((bookmark_tag_relation left JOIN illust_info ON bookmark_tag_relation.illust_id = illust_info.id)'
         ' left JOIN bookmark_count ON bookmark_tag_relation.illust_id = bookmark_count.id)'
-        ' JOIN bookmark_tag ON bookmark_tag.id = bookmark_tag_relation.tag_id;'
+        ' JOIN bookmark_tag ON bookmark_tag.id = bookmark_tag_relation.tag_id'
     )
     for i in result:
         print(i['id'], i['title'], i['count'], i['name'])
@@ -42,4 +42,4 @@ def get_my_bookmark(user_id=1):
 #             'INSERT INTO '
 #         )
 
-get_my_bookmark()
+# get_my_bookmark()

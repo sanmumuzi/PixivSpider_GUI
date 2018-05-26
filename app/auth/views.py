@@ -1,14 +1,99 @@
-from functools import wraps
 import json
+from functools import wraps
+from sqlite3 import IntegrityError
 
+from PixivSpider import PixivSpiderApi as pix_api
 from flask import (
     flash, g, render_template, request, session, url_for, redirect
 )
-from werkzeug.security import check_password_hash
 
 from app.db import get_db
 from . import auth
-from .func import check_account
+
+
+def check_account(pixiv_account, pixiv_password):
+    return_dict = pix_api.check_login_status(account=pixiv_account, password=pixiv_password, enforce=True,
+                                             return_auth_info=True)
+    return return_dict
+
+
+def get_bookmark_set():
+    db = get_db()
+    illust_id_list = db.execute(
+        'SELECT id FROM bookmark_count'
+    ).fetchall()
+    illust_id_set = {item['id'] for item in illust_id_list}
+    return illust_id_set
+
+
+def update_bookmark(bookmark_set):
+    db = get_db()
+    gen_bookmarks = pix_api.get_bookmarks(painter_id=g.user['id'], cookies_dict=json.loads(g.user['cookies']),
+                                        token_str=g.user['token'])
+    update_sign = True
+    for bookmark_list in gen_bookmarks:
+        for bookmark_dict in bookmark_list:
+            illust_title = bookmark_dict['illust_title']
+            illust_tags_list = bookmark_dict['illust_tags_list']
+            illust_id = bookmark_dict['illust_id']
+            user_id = bookmark_dict['user_id']
+            user_name = bookmark_dict['user_name']
+            bookmark_count = bookmark_dict['bookmark_num']
+            if illust_id not in bookmark_set:
+                try:
+                    db.execute('INSERT OR IGNORE INTO illust_info (id, title, user_id) VALUES (?, ?, ?)', (illust_id, illust_title, user_id))
+                    db.execute('INSERT OR IGNORE INTO user (id, name) VALUES (?, ?)', (user_id, user_name))
+                    db.execute('INSERT OR REPLACE INTO bookmark_count (id, count) VALUES (?, ?)',
+                               (illust_id, bookmark_count))
+                    for illust_tag in illust_tags_list:
+                        db.execute('INSERT OR IGNORE INTO illust_tag (name) VALUES (?)', (illust_tag,))
+                        illust_tag_id = \
+                            db.execute('SELECT id FROM illust_tag WHERE name = ?', (illust_tag, )).fetchone()['id']
+                        # 字符串的相等总觉得会慢死
+                        try:
+                            db.execute(
+                                'INSERT INTO illust_tag_relation (illust_id, tag_id) VALUES (?, ?)',
+                                (illust_id, illust_tag_id)
+                            )
+                        except IntegrityError:  # 实际上来说,如果illust_id不在bookmark_set中,是不会产生这个Error的.
+                            update_sign = False
+                            break
+                except Exception:
+                    raise
+                else:
+                    db.commit()
+                    bookmark_set.add(illust_id)
+            else:
+                update_sign = False
+                break
+        if not update_sign:
+            break
+
+
+def get_bookmark(bookmark_set):
+    db = get_db()
+    bookmark_info_list = []
+    for bookmark_id in bookmark_set:
+        bookmark_info_dict = {}
+        illust_tag_result = db.execute(
+            'SELECT name FROM illust_tag WHERE id IN (SELECT tag_id FROM illust_tag_relation WHERE illust_id = ?)',
+            (bookmark_id,)
+        ).fetchall()
+        illust_tag_set = set([illust_tag['name'] for illust_tag in illust_tag_result])  # 避免重复,如果前面出了错,这里很可能会重复
+        bookmark_info = db.execute(
+            'SELECT illust_info.title, bookmark_count.count, user.id, user.name FROM '
+            '(illust_info JOIN user ON illust_info.id = ? AND illust_info.user_id = user.id) '
+            'JOIN bookmark_count ON bookmark_count.id = ?',
+            (bookmark_id, bookmark_id)
+        ).fetchone()
+        bookmark_info_dict['illust_title'] = bookmark_info['title']
+        bookmark_info_dict['bookmark_count'] = bookmark_info['count']
+        bookmark_info_dict['user_id'] = bookmark_info['id']
+        bookmark_info_dict['user_name'] = bookmark_info['name']
+        bookmark_info_dict['illust_id'] = bookmark_id
+        bookmark_info_dict['illust_tag'] = illust_tag_set
+        bookmark_info_list.append(bookmark_info_dict)
+    return bookmark_info_list
 
 
 def login_require(view_func):
@@ -95,11 +180,14 @@ def register():
     return render_template('auth/register.html')
 
 
-@auth.route('/id/<int:id>')  # 这里不合适，谁的主页都能进
+@auth.route('/user/<int:id>')  # 这里不合适，谁的主页都能进
 @login_require
 def homepage(id):
-
-    return render_template('auth/homepage.html')
+    bookmark_set = get_bookmark_set()
+    if request.args.get('operate') == 'update':
+        update_bookmark(bookmark_set)
+    bookmark_info_list = get_bookmark(bookmark_set)
+    return render_template('auth/homepage.html', bookmark_info_list=bookmark_info_list)
 
 
 @auth.before_app_request

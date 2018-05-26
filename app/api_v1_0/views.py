@@ -5,7 +5,6 @@ from flask import (
 )
 
 from . import api
-from app.main.func import illust_dict
 
 
 # @api.route('/illust')

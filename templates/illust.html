@@ -8,23 +8,68 @@
         <table class="table table-bordered" style="width: 100%;">
             <thead>
             <tr>
-                <th>Illust id</th>
-                <th>P</th>
-                <th>Date</th>
-                <th>File type</th>
-                <th>User id</th>
+                {% for key in illust_base_info_dict.keys() %}
+                <th>{{ key }}</th>
+                {% endfor %}
+                <th>Illust_path</th>
             </tr>
             </thead>
             <tbody>
             <tr>
-                <td class="illust_id">{{ illust_base_info_dict['id'] }}</td>
-                <td class="illust_p">{{ illust_base_info_dict['p'] }}</td>
-                <td class="illust_date">{{ illust_base_info_dict['date'] }}</td>
-                <td class="illust_file_type">{{ illust_base_info_dict['type'] }}</td>
-                <td class="illust_user_id">{{ illust_base_info_dict['user_id'] }}</td>
+                {% for key, value in illust_base_info_dict.items() %}
+                <td class="illust_{{ key }}">{{ value }}</td>
+                {% endfor %}
+                <td class="illust_path">{{ illust_path }}</td>
             </tr>
             </tbody>
         </table>
         {% endif %}
+    </div>
+    <div>
+        {% if illust_info_dict is not none %}
+        <table class="table table-bordered" style="width: 100%;">
+            <thead>
+            <tr>
+                {% for key in illust_info_dict.keys() %}
+                <th>{{ key }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for key, value in illust_info_dict.items() %}
+                <td class="illust_{{ key }}">{{ value }}</td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    <div>
+        {% if illust_user_info is not none %}
+        <table class="table table-bordered" style="width: 100%;">
+            <thead>
+            <tr>
+                {% for key in illust_user_info.keys() %}
+                <th>{{ key }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for key, value in illust_user_info.items() %}
+                <td class="illust_{{ key }}">{{ value }}</td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    <div>
+        <ul class="list-group">
+            {% for illust_tag in illust_tag_set %}
+            <li class="list-group-item">{{ illust_tag }}</li>
+            {% endfor %}
+        </ul>
     </div>
 {% endblock %}

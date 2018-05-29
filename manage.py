@@ -30,6 +30,8 @@ def make_illust_dict(dirname_list):
         for illust_name in os.listdir(dirname):
             try:
                 illust_id, illust_p, _ = illust_info_re_str.findall(illust_name)[0]
+                illust_id = int(illust_id)
+                illust_p = int(illust_p)
             except IndexError:
                 pass
             else:

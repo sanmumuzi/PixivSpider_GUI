@@ -156,23 +156,29 @@ def get_illust_stream(illust_path: str):
 #     return jsonify({'status': 'error', 'message': 'Not exist.'})
 
 
-def select_already_bookmark_set(db):
-    already_bookmark = db.execute(
+def select_illust_bookmark_set(db):
+    illust_bookmark = db.execute(
         'SELECT illust_id FROM bookmark_user_relation WHERE user_id = ?', (g.user['id'],)
     ).fetchall()
-    return {bookmark_item['illust_id'] for bookmark_item in already_bookmark}
+    if illust_bookmark is None:
+        return set()
+    return {bookmark_item['illust_id'] for bookmark_item in illust_bookmark}
 
 
 def select_illust_base_info_dict(db, illust_id):
-    return db.execute(  # 数据库中是否有这个图片的信息
+    illust_base_info_dict = db.execute(  # 数据库中是否有这个图片的信息
         'SELECT * FROM illust WHERE id = ?', (illust_id,)
     ).fetchone()  # Should be id, p, date, type
-
+    if illust_base_info_dict is not None:
+        illust_base_info_dict = dict(illust_base_info_dict)
+    return illust_base_info_dict
 
 def select_illust_info_dict(db, illust_id):
     illust_info_dict = db.execute(
         'SELECT * FROM illust_info WHERE id = ?', (illust_id,)
     ).fetchone()  # Should be id, title, user_id, introduction, bookmark_num, stable
+    if illust_info_dict is not None:
+        illust_info_dict = dict(illust_info_dict)
     return illust_info_dict
 
 
@@ -183,6 +189,17 @@ def select_illust_tag_set(db, illust_id):
         (illust_id,)
     ).fetchall()
     return {illust_item['name'] for illust_item in illust_tag_list}
+
+
+def select_user_info(db, user_id):  # user_info + en_user_info
+    user_info = db.execute(
+        'SELECT * FROM user INNER JOIN (user_info INNER JOIN en_user_info ON user_info.id = ? AND en_user_info.id = ?) '
+        'ON user.id = ?', (user_id, user_id, user_id)
+    ).fetchone()
+    if user_info is not None:
+        user_info = dict(user_info)
+        user_info = {key: value for key, value in user_info.items() if value is not None}
+    return user_info  # 这个user_info里包括
 
 
 def insert_into_illust(db, illust_base_info_dict):
@@ -248,7 +265,75 @@ def handle_illust_tag(db, illust_id, illust_tag_list, illust_tag_set):
                 )
 
 
-# def select_illust_user_base_info(db, illust_):
+def handle_illust_bookmark(db, illust_id: int, illust_bookmark_count, already_bookmark_set):
+    if illust_bookmark_count is None:  # 该illust不属于bookmark
+        return
+    else:
+        if illust_id not in already_bookmark_set:  # 如果该illust在数据库中不是书签
+            db.execute(
+                'INSERT INTO bookmark_user_relation (illust_id, user_id) '
+                'VALUES (?, ?)', (illust_id, g.user['id'])
+            )
+
+
+def handle_illust_user(db, illust_id: int, user_id: int, user_name):
+    # 从设定逻辑上来说,如果user_info里拥有某个用户id, user表中一定存在.
+    db.execute(
+        'INSERT OR IGNORE INTO user (id, name) VALUES (?, ?)', (user_id, user_name)
+    )
+    user_info = db.execute(
+        'SELECT * FROM user_info INNER JOIN en_user_info ON user_info.id = ? AND en_user_info.id = ?', (user_id, user_id)
+    ).fetchone()
+    if user_info is None:  # 默认数据表为稳定表,即有数据即为完整数据
+        user_info = pix_api.get_painter_info(painter_id=user_id, cookies_dict=json.loads(g.user['cookies']))
+        # key_str = ', "'.join(user_info['Profile'].keys())
+        # key_str = '"' + key_str + '"'  # 愚蠢拼接,将每个key都用"围起来
+        user_info_key_set = {'website', 'self introduction', 'twitter', 'instagram', 'tumblr', 'facebook', 'skype',
+                             'windows live', 'google talk', 'yahoo! messenger', 'circlems'}
+        en_user_info_key_set = {'gender', 'location', 'age', 'birthday', 'occupation'}
+        item_len = len(user_info['Profile'])
+        user_info_key_str = '"'
+        user_info_value_list = []
+        en_user_info_key_str = '"'
+        en_user_info_value_list = []
+        user_info_count = 0
+        en_user_info_count = 0
+        for key, value in user_info['Profile'].items():  # 使用if, elif 顺便排除了nickname的干扰
+            key, value = key.lower(), value.lower()
+            if key in user_info_key_set:
+                user_info_count += 1
+                user_info_key_str += key.lower() + '", "'
+                user_info_value_list.append(value)
+            elif key in en_user_info_key_set:
+                en_user_info_count += 1
+                en_user_info_key_str += key.lower() + '", "'
+                en_user_info_value_list.append(value)
+        if user_info_count != 0:
+            user_info_key_str = user_info_key_str[:-3]
+            temp_str = ''.join('?, ' * (user_info_count - 1)) + '?'
+            test_str = 'INSERT INTO user_info (id, {0}) VALUES (?, {1})'.format(user_info_key_str, temp_str)
+            db.execute(
+                'INSERT INTO user_info (id, {0}) VALUES (?, {1})'.format(user_info_key_str, temp_str),
+                (user_id, *user_info_value_list)
+            )
+        if en_user_info_count != 0:
+            en_user_info_key_str = en_user_info_key_str[:-3]
+            temp_str = ''.join('?, ' * (en_user_info_count - 1)) + '?'
+            db.execute(
+                'INSERT INTO en_user_info (id, {0}) VALUES (?, {1})'.format(en_user_info_key_str, temp_str),
+                (user_id, *en_user_info_value_list)
+            )
+        # Note: shit code.  强耦合,强行假装统一接口
+        temp_data = dict(user_info['Profile'])  # 这个dict应该不用
+        temp_data.pop('Nickname')
+    else:  # 数据完整
+        temp_data = dict(user_info)
+        temp_data.pop('id')
+        temp_data = {key: value for key, value in temp_data.items() if value is not None}
+    temp_data['user_id'] = user_id
+    temp_data['user_name'] = user_name
+    return temp_data
+
 
 @main.route('/illust')
 def show_illust():
@@ -264,15 +349,16 @@ def show_illust():
             abort(404)
         else:
             try:
-                illust_path = current_app[illust_id][illust_p]
+                illust_path = current_app.illust_dict[illust_id][illust_p]
             except KeyError:  # 本地不存在该illust
                 illust_path = None
 
             db = get_db()
-            already_bookmark_set = select_already_bookmark_set(db)
+            illust_bookmark_set = select_illust_bookmark_set(db)
             illust_base_info_dict = select_illust_base_info_dict(db, illust_id)
             illust_info_dict = select_illust_info_dict(db, illust_id)
             illust_tag_set = select_illust_tag_set(db, illust_id)
+            illust_user_info = None
             illust_detail_resp_text = None
 
             if illust_path is None:  # 本地无illust
@@ -293,10 +379,15 @@ def show_illust():
                 # 处理标签
                 illust_tag_list = illust_info_dict['tags']
                 handle_illust_tag(db, illust_id, illust_tag_list, illust_tag_set)
+                illust_tag_set = set(illust_tag_list)
                 # 处理书签
-
+                illust_bookmark_count = illust_info_dict['bookmark_num']
+                handle_illust_bookmark(db, illust_id, illust_bookmark_count, illust_bookmark_set)
                 # 处理user
-                
+                user_id = illust_info_dict['user_id']
+                user_name = illust_info_dict['user_name']
+                illust_user_info = handle_illust_user(db, illust_id, user_id, user_name)
+                # db.commit()
             else:  # illust_info处于稳定状态, 以下表默认已更新状态
                 pass  # illust_tag, bookmark_user_relation, illust_tag_relation, user
 

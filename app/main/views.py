@@ -389,8 +389,26 @@ def show_illust():
                 illust_user_info = handle_illust_user(db, illust_id, user_id, user_name)
                 # db.commit()
             else:  # illust_info处于稳定状态, 以下表默认已更新状态
-                pass  # illust_tag, bookmark_user_relation, illust_tag_relation, user
+                # illust_tag, bookmark_user_relation, illust_tag_relation, user
+                # 表数据大多之前都已提取,现在只提取剩下的两个表user,user_info, (该两表必须拥有user_id才可select)
+                user_id = illust_info_dict['user_id']
+                illust_user_info = select_user_info(db, user_id)  # 与上面的两个illust_info_dict统一接口, 实际上这个有两个重复的key:id
+            db.commit()
+            print(illust_tag_set)
+            print(illust_info_dict)
+            print(illust_user_info)
+            illust_type, illust_stream = get_illust_stream(illust_path)
+            return render_template(
+                'illust.html',
+                illust_path=illust_path,
+                illust_type=illust_type,
+                illust_stream=illust_stream,
+                illust_base_info_dict=illust_base_info_dict,
+                illust_info_dict=illust_info_dict,
+                illust_user_info=illust_user_info,
+                illust_tag_set=illust_tag_set,
+            )
 
-# @main.before_app_first_request
+        # @main.before_app_first_request
 # def init_illust_dict():
 #     print(current_app)

@@ -20,9 +20,9 @@ def check_account(pixiv_account, pixiv_password):
 def get_bookmark_set():
     db = get_db()
     illust_id_list = db.execute(
-        'SELECT id FROM bookmark_count'
+        'SELECT illust_id FROM bookmark_user_relation WHERE user_id = ?', (g.user['id'],)
     ).fetchall()
-    illust_id_set = {item['id'] for item in illust_id_list}
+    illust_id_set = {item['illust_id'] for item in illust_id_list}
     return illust_id_set
 
 
@@ -41,10 +41,14 @@ def update_bookmark(bookmark_set):
             bookmark_count = bookmark_dict['bookmark_num']
             if illust_id not in bookmark_set:
                 try:
-                    db.execute('INSERT OR IGNORE INTO illust_info (id, title, user_id) VALUES (?, ?, ?)', (illust_id, illust_title, user_id))
+                    db.execute(
+                        'INSERT INTO bookmark_user_relation (illust_id, user_id) VALUES (?, ?)', (illust_id, user_id)
+                    )
+                    db.execute(  # 插入illust_info, 但是信息可使用, 却不稳定
+                        'INSERT OR IGNORE INTO illust_info (id, title, user_id, bookmark_count)'  # 冲突之后要忽略
+                        ' VALUES (?, ?, ?, ?)', (illust_id, illust_title, user_id, bookmark_count)
+                    )
                     db.execute('INSERT OR IGNORE INTO user (id, name) VALUES (?, ?)', (user_id, user_name))
-                    db.execute('INSERT OR REPLACE INTO bookmark_count (id, count) VALUES (?, ?)',
-                               (illust_id, bookmark_count))
                     for illust_tag in illust_tags_list:
                         db.execute('INSERT OR IGNORE INTO illust_tag (name) VALUES (?)', (illust_tag,))
                         illust_tag_id = \
@@ -80,14 +84,18 @@ def get_bookmark(bookmark_set):
             (bookmark_id,)
         ).fetchall()
         illust_tag_set = set([illust_tag['name'] for illust_tag in illust_tag_result])  # 避免重复,如果前面出了错,这里很可能会重复
+        # bookmark_info = db.execute(
+        #     'SELECT illust_info.title, bookmark_count.count, user.id, user.name FROM '
+        #     '(illust_info JOIN user ON illust_info.id = ? AND illust_info.user_id = user.id) '
+        #     'JOIN bookmark_count ON bookmark_count.id = ?',
+        #     (bookmark_id, bookmark_id)
+        # ).fetchone()
         bookmark_info = db.execute(
-            'SELECT illust_info.title, bookmark_count.count, user.id, user.name FROM '
-            '(illust_info JOIN user ON illust_info.id = ? AND illust_info.user_id = user.id) '
-            'JOIN bookmark_count ON bookmark_count.id = ?',
-            (bookmark_id, bookmark_id)
+            'SELECT illust_info.title, illust_info.bookmark_count, user.id, user.name FROM '
+            'illust_info JOIN user ON illust_info.id = ? AND user.id = illust_info.user_id', (bookmark_id,)
         ).fetchone()
         bookmark_info_dict['illust_title'] = bookmark_info['title']
-        bookmark_info_dict['bookmark_count'] = bookmark_info['count']
+        bookmark_info_dict['bookmark_count'] = bookmark_info['bookmark_count']
         bookmark_info_dict['user_id'] = bookmark_info['id']
         bookmark_info_dict['user_name'] = bookmark_info['name']
         bookmark_info_dict['illust_id'] = bookmark_id

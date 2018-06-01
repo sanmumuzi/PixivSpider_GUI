@@ -1,12 +1,13 @@
 import base64
 import json
+import os
 import logging
 from typing import List, Dict, Any, Union
-import time
+
 from collections import defaultdict
 
 from PixivSpider import PixivSpiderApi as pix_api
-from flask import render_template, request, abort, current_app, g
+from flask import render_template, request, abort, current_app, g, flash, redirect, url_for
 
 from app.db import get_db
 from . import main
@@ -406,9 +407,9 @@ def show_illust():
 
             if g.user is not None:
                 illust_bookmark_set = select_illust_bookmark_set(db)
-                illust_base_info_dict = select_illust_base_info_dict(db, illust_id)
-                illust_info_dict = select_illust_info_dict(db, illust_id)
-                illust_tag_set = select_illust_tag_set(db, illust_id)
+                # illust_base_info_dict = select_illust_base_info_dict(db, illust_id)
+                # illust_info_dict = select_illust_info_dict(db, illust_id)
+                # illust_tag_set = select_illust_tag_set(db, illust_id)
 
                 if illust_path is None:  # 本地无illust
                     temp_illust_base_info_dict, illust_path, illust_detail_resp_text = download_illust_from_pixiv(
@@ -503,6 +504,70 @@ def show_tag():
                         'illust_stream': illust_stream
                     })
         return render_template('tag_to_illust.html', illust_tag_name=illust_tag_name, illust_list=illust_list)
+
+
+@main.route('/query', methods=('POST',))  # 为了简单,对于非重要数据均使用GET, 而非POST提交表单
+def deal_with_query():
+    query_type = request.form['type']
+    if query_type == 'illust':
+        try:
+            query_illust_id = int(request.form['args'])
+        except ValueError:
+            error_msg = 'Query Error. Please check your query args.'
+        else:
+            return redirect(url_for('main.show_illust', illust_id=query_illust_id))
+    elif query_type == 'illust_tag':
+        query_illust_tag_name = request.form['args']
+        if query_illust_tag_name:
+            return redirect(url_for('main.show_tag', name=query_illust_tag_name))
+
+    error_msg = 'Query Error. Please check your query args.'
+    flash(error_msg)
+    return redirect(url_for('main.index'))
+
+
+@main.route('/setting')
+def setting():
+    return render_template('setting.html', illust_directory_list=current_app.config['DIRLIST'])
+
+
+@main.route('/modify', methods=('POST',))
+def modify_setting():
+    dir_name = request.form['directory'].strip()
+    current_app.illust_dict.update(current_app.directory_func([dir_name]))
+    current_app.config['DIRLIST'].append(dir_name)
+    db = get_db()
+    db.execute(
+        'INSERT INTO application_illust_dir (illust_dir_name) VALUES (?)', (dir_name,)
+    )
+    db.commit()
+    return redirect(url_for('main.setting'))
+
+
+@main.route('/setting/delete')
+def delete_dir_name():
+    """
+    存在问题: 删除时, 如果两个文件夹同样 同样的文件, 删除时会将信息删除, 会让某些该显示的显示不出.
+    :return:
+    """
+    dir_name = request.args.get('dir_name')
+    if dir_name in current_app.config['DIRLIST']:
+        db = get_db()
+        db.execute(
+            'DELETE FROM application_illust_dir WHERE illust_dir_name = ?', (dir_name,)
+        )
+        db.commit()
+        current_app.config['DIRLIST'].remove(dir_name)  # 修改全局的DIRLIST
+        temp_illust_dict = current_app.directory_func([dir_name])  # 计算删除的目录中的illust
+        for illust_id in temp_illust_dict:
+            for illust_p in temp_illust_dict[illust_id]:
+                try:
+                    current_app.illust_dict[illust_id].pop(illust_p)  # 删除对应的p
+                    if not current_app.illust_dict[illust_id]:  # 如果p都删除光了,删除illust_id
+                        current_app.illust_dict.pop(illust_id)
+                except Exception:  # 如果在程序运行当中,原文件夹被改变(增加了图片,在删除的时候会产生巨大的bug)
+                    pass
+    return redirect(url_for('main.setting'))
 
 
 # @main.before_app_first_request

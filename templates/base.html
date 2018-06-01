@@ -23,11 +23,19 @@
         <ul class="nav navbar-nav">
             <li><a href="{{ url_for('main.show_tag') }}">标签主页</a></li>
         </ul>
-        <form class="navbar-form navbar-left" role="search">
+        <form class="navbar-form navbar-left" role="search" action="{{ url_for('main.deal_with_query') }}" method="post">
             <div class="form-group">
-                <input type="text" class="form-control" placeholder="Search">
+                <input type="text" class="form-control" placeholder="Search" name="args">
             </div>
-            <button type="submit" class="btn btn-default">提交</button>
+            <input type="hidden" name="type" value="illust">
+            <button type="submit" class="btn btn-default">查询图片</button>
+        </form>
+        <form class="navbar-form navbar-left" role="search" action="{{ url_for('main.deal_with_query') }}" method="post">
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="Search" name="args">
+            </div>
+            <input type="hidden" name="type" value="illust_tag">
+            <button type="submit" class="btn btn-default">查询标签</button>
         </form>
         <ul class="nav navbar-nav navbar-right">
             {% if g.user %}
@@ -37,6 +45,7 @@
             <li><a href="{{ url_for('auth.register') }}"><span class="glyphicon glyphicon-user"></span> Register</a></li>
             <li><a href="{{ url_for('auth.login') }}"><span class="glyphicon glyphicon-log-in"></span> Log In</a></li>
             {% endif %}
+            <li><a href="{{ url_for('main.setting') }}">应用设置</a></li>
             <li><a href="https://github.com/sanmumuzi/PixivSpider_GUI">项目源代码</a></li>
         </ul>
     </div>
@@ -46,7 +55,7 @@
   {% if messages %}
     <ul class=flashes>
     {% for message in messages %}
-      <li>{{ message }}</li>
+      <li class="list-group-item list-group-item-warning">{{ message }}</li>
     {% endfor %}
     </ul>
   {% endif %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}PixivSpider{% endblock %}
+{% block body %}
+{{ super() }}
+<h3>本地illust的标签分类</h3>
+{% if illust_tag_name_list %}
+<div class="list-group">
+    {% for illust_tag_name, occur_count in illust_tag_name_list %}
+    <a href="{{ url_for('main.show_tag', name=illust_tag_name) }}" class="list-group-item"><span class="badge">{{ occur_count }}</span>{{ illust_tag_name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

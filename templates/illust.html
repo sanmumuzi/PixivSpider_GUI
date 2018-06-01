@@ -2,9 +2,13 @@
 {% block title %}PixivSpider{% endblock %}
 
 {% block body %}
-<img src="data:image/{{ illust_type }};base64,{{ illust_stream }}" class="img-responsive img-rounded center-block" />
+{% if illust_stream is not none %}
+    <img src="data:image/{{ illust_type }};base64,{{ illust_stream }}" class="img-responsive img-rounded center-block" />
+{% else %}
+    <a href="#" class="btn btn-primary btn-block" role="button">下载图片</a>
+{% endif %}
+{% if illust_base_info_dict is not none %}
     <div>
-        {% if illust_base_info_dict is not none %}
         <table class="table table-bordered" style="width: 100%;">
             <thead>
             <tr>
@@ -23,10 +27,10 @@
             </tr>
             </tbody>
         </table>
-        {% endif %}
     </div>
+{% endif %}
+{% if illust_info_dict is not none %}
     <div>
-        {% if illust_info_dict is not none %}
         <table class="table table-bordered" style="width: 100%;">
             <thead>
             <tr>
@@ -43,10 +47,10 @@
             </tr>
             </tbody>
         </table>
-        {% endif %}
     </div>
+{% endif %}
+{% if illust_user_info is not none %}
     <div>
-        {% if illust_user_info is not none %}
         <table class="table table-bordered" style="width: 100%;">
             <thead>
             <tr>
@@ -63,13 +67,17 @@
             </tr>
             </tbody>
         </table>
-        {% endif %}
     </div>
+{% endif %}
+{% if illust_tag_set %}
     <div>
         <ul class="list-group">
             {% for illust_tag in illust_tag_set %}
-            <li class="list-group-item">{{ illust_tag }}</li>
+            <li class="list-group-item">
+                <a href="{{ url_for('main.show_tag', name=illust_tag) }}">{{ illust_tag }}</a>
+            </li>
             {% endfor %}
         </ul>
     </div>
+{% endif %}
 {% endblock %}

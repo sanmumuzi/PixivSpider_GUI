@@ -23,7 +23,11 @@
             <tr>
                 <td class="illust_id">{{ bookmark_info_dict['illust_id'] }}</td>
                 <td class="illust_title">{{ bookmark_info_dict['illust_title'] }}</td>
-                <td class="illust_tag">{{ bookmark_info_dict['illust_tag'] }}</td>
+                <td class="illust_tag">
+                    {% for illust_tag in bookmark_info_dict['illust_tag'] %}
+                    <a href="{{ url_for('main.show_tag', name=illust_tag) }}">[{{ illust_tag }}]</a>
+                    {% endfor %}
+                </td>
                 <td class="user_id">{{ bookmark_info_dict['user_id'] }}</td>
                 <td class="user_name">{{ bookmark_info_dict['user_name'] }}</td>
                 <td class="bookmark_count">{{ bookmark_info_dict['bookmark_count'] }}</td>

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}PixivSpider{% endblock %}
+{% block body %}
+{{ super() }}
+<div>
+    <h3>{{ error_title }}</h3>
+    {% if error_message is not none %}
+    <p>{{ error_message }}</p>
+    {% endif %}
+</div>
+{% endblock %}

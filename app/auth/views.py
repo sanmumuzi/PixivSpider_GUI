@@ -17,6 +17,18 @@ def check_account(pixiv_account, pixiv_password):
     return return_dict
 
 
+# def get_bookmark_list():
+#     db = get_db()
+#     illust_id_list = db.execute(
+#         'SELECT illust_id FROM bookmark_user_relation INNER JOIN '
+#         'illust_info ON bookmark_user_relation.user_id = ? '
+#         'AND illust_info.id = bookmark_user_relation.illust_id'
+#         ' ORDER BY illust_info.bookmark_count DESC', (g.user['id'],)
+#     ).fetchall()
+#     illust_id_list = [item['illust_id'] for item in illust_id_list]
+#     return illust_id_list
+
+
 def get_bookmark_set():
     db = get_db()
     illust_id_list = db.execute(
@@ -101,6 +113,7 @@ def get_bookmark(bookmark_set):
         bookmark_info_dict['illust_id'] = bookmark_id
         bookmark_info_dict['illust_tag'] = illust_tag_set
         bookmark_info_list.append(bookmark_info_dict)
+    bookmark_info_list.sort(key=lambda item: item['bookmark_count'], reverse=True)  # 降序排序所有bookmark的信息
     return bookmark_info_list
 
 

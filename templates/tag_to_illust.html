@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}PixivSpider{% endblock %}
+{% block body %}
+{{ super() }}
+<div>
+    <h3>当前标签为: {{ illust_tag_name }}</h3>
+</div>
+{% if illust_list %}
+<div>
+    {% for illust_data_dict in illust_list %}
+    <a href="{{ url_for('main.show_illust', illust_id=illust_data_dict['illust_id'], illust_p=illust_data_dict['illust_p']) }}">
+    <img src="data:image/{{ illust_data_dict['illust_type'] }};base64,{{ illust_data_dict['illust_stream'] }}"
+         class="img-rounded" width="30%" height="30%"/>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div>
+    <p>本地暂无属于该标签的作品</p>
+</div>
+{% endif %}
+{% endblock %}
